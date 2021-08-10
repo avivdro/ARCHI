@@ -1,0 +1,21 @@
+ANSWERS
+
+T1A:
+	- What is code/stack - written in code
+	- You can see the order of addresses is the order that the data is initialized, with differences between the data being the size of the data.
+	- LONG sizeof - 8 bytes. Long can save dist variables (6 bytes max)
+
+T1B:
+	- dist1: &addr6 - p: -4: means that they are together in the stack
+	- dist2: &local - p: big number: local is an int and not *int, so the distance is the distance from p to the value of local, which is large.
+	-dist3: &foo - p: small: foo is in the initial code and p is uninitialized data
+
+T1C:
+	-The + operator knows to add to the address in accordance to the size of the data type of the array elements. Char- adds 1 byte, Int - adds 4 bytes, etc.
+
+T1D:
+	-The values are printed.
+	-Uninitialized pointer: (nil)
+
+
+TASK 2
