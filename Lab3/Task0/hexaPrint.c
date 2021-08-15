@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
 	FILE *f = fopen(argv[1], "r");
 
 	if (f==NULL){
-		printf("No such file exists, exiting.");
+		printf("No such file exists, exiting.\n");
 		exit(2);
 	}
 
