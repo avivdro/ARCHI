@@ -19,16 +19,11 @@ char menu[] = "Menu:\n1) Load signatures.\n2) Print signatures.\n3) Detect virus
 
 
 //Task 1a=========================================
-virus* readVirus(FILE* fp, int big_endian){
+virus* readVirus(FILE* fp){
 	virus *v = (virus*)malloc(sizeof(virus));
 	if (fread(&(v->SigSize), 2, 1, fp) != 1){
 		return NULL;
 	}
-	if (big_endian){
-		int swapped = (v->SigSize>>8) | (v->SigSize<<8);
-		v->SigSize = swapped;
-	}
-
 	fread(v->virusName, 16, 1, fp);
 
 	v->sig = (unsigned char*)malloc(v->SigSize);
@@ -94,15 +89,13 @@ link* loadVirusListFromFile(link *virus_list){
 
     unsigned char header[4];
 	fread(header, 4, sizeof(char), file);
-	int big_endian = 0;  //0 is little, 1 is big
-	if (header[3] == 'B') big_endian = 1;
 
 	virus* v;
-	v = readVirus(file, big_endian);
+	v = readVirus(file);
 	while (v!=NULL){
 		//printf("Reading virus- %s\n", v->virusName);
 		virus_list = list_append(virus_list, v);
-		v = readVirus(file, big_endian);
+		v = readVirus(file);
 	}
 	fclose(file);
 	return virus_list;
@@ -130,20 +123,17 @@ int compare_virus(char* buffer, unsigned short rest_of_buffer, virus* virus){
 
 
 void detect_virus(char *buffer, unsigned int size, link *virus_list, FILE* output){
-	int count = 0;
 	for(int offset=0;offset<size;offset++){
         for(int i=0;i<get_list_size(virus_list);i++){
             virus* virus = NULL;
             virus = virusNumberI(virus_list,i)->vir;
             if(compare_virus(buffer+offset,size-offset,virus)==0){
-            	count++;
                 printf("Starting byte: %d\n",offset);
                 printf("Virus name: %s\n", virus->virusName);
                 printf("Virus size: %d\n\n", virus->SigSize);
             }
         }
     }
-    if (count==0){printf("No viruses were found.\n");}
 }
 
 unsigned int readVirusFile(char* filename, char* buffer){
@@ -226,6 +216,8 @@ int main(int argc, char** argv){
 		scanf(" %c",&input);
 	}
 	list_free(list);
+
+	
 
 	return 0;
 }
