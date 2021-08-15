@@ -1,0 +1,5 @@
+ANSWERS Lab3:
+
+Task0-
+	- The segmentation fault was from the loop accessing arr[n] instead of stopping at [n-1].
+	- The memory leak was from the malloc in the bubblesort function which wasn't freed.
