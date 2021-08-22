@@ -11,13 +11,16 @@ aviv drori */
 #define SYS_CLOSE 6
 #define SYS_LSEEK 19
 #define SYS_GETDENTS 141 
+
 #define SEEK_SET 0
+#define SEEK_END 2
 
 #define O_RDONLY 0
 #define O_WRONLY 1
 #define O_RDRW 2
 #define O_CREATE 64
 #define O_RWX 0777
+#define O_APPEND 1024
 
 #define STDIN 0
 #define STDOUT 1
@@ -102,7 +105,7 @@ void printDebugFile(linux_dirent* file){
 int printFile(int output,linux_dirent* file,int debugFlag, char type){
   int callReturn;
   callReturn = system_call(SYS_WRITE, output, file->name, strlen(file->name));
-  system_call(SYS_WRITE, output, "\tType: ", 1);
+  system_call(SYS_WRITE, output, "\tType: ", 7);
   system_call(SYS_WRITE, output, getType(type) ,strlen(getType(type)));
   system_call(SYS_WRITE, output, "\n", 1);
 
@@ -110,6 +113,37 @@ int printFile(int output,linux_dirent* file,int debugFlag, char type){
   if(debugFlag){printDebug(SYS_WRITE, callReturn);printDebugFile(file);}
 
   return file->len;
+}
+
+/* TASK 2 C ==============================================================*/
+void infection(){
+  system_call(SYS_WRITE, STDOUT, "Hello, infected file\n", 21);
+}
+
+void infector(char* fileName){
+  system_call(SYS_WRITE, STDOUT, "Infecting: ", 11);
+  system_call(SYS_WRITE, STDOUT, fileName, strlen(fileName));
+  system_call(SYS_WRITE, STDOUT, "\n", 1);
+  int fd, flameFile; /* file descriptors */
+  fd = system_call(SYS_OPEN, fileName, O_RDRW, 0777);
+  system_call(SYS_LSEEK, fd, 0, SEEK_SET);     /* START OF FILE */
+  flameFile = system_call(SYS_OPEN, "flame", O_RDONLY, 0777);
+
+  int read;
+  int write;
+  char c;
+  int count = 0;
+  while (read = system_call(SYS_READ, flameFile, &c, 1) > 0){
+    write = system_call(SYS_WRITE, fd, &c, 1);
+    if (write<1){
+       system_call(SYS_WRITE, STDOUT, "error infecting\ncopied: ", 24);
+       system_call(SYS_WRITE, STDOUT, itoa(count), strlen(itoa(count)));
+       system_call(SYS_WRITE, STDOUT, "\n", 1);
+       break;
+    }
+    count ++;
+  }
+  system_call(SYS_WRITE, STDOUT, "Infected!\n", 10);
 }
 
 
@@ -132,16 +166,16 @@ int main (int argc , char* argv[], char* envp[]){
   /* FLAGS =============================================================== */
   for(i = 1;i < argc; i++){
     validArgument = 0;
-    if(strcmp("-D", argv[i]) == 0){
+    if(strcmp("-D", argv[i]) == 0){  /*DEBUG flag */
       validArgument=1;
       debug=1;
     }
-    if (strncmp("-p", argv[i], 2) == 0){
+    if (strncmp("-p", argv[i], 2) == 0){ /*prefix flag */
       validArgument = 1;
       prefixFlag = 1;
       prefix = argv[i][2];
     }
-    if (strncmp("-a", argv[i], 2) == 0){
+    if (strncmp("-a", argv[i], 2) == 0){ /*attach flag */
       validArgument = 1;
       attachFlag = 1;
       attach = argv[i][2];
@@ -153,9 +187,16 @@ int main (int argc , char* argv[], char* envp[]){
   }
 
   if (debug && prefixFlag){
+    /* debug msg of prefix given */
     system_call(SYS_WRITE, STDERR, "Prefix given: ", 14);
     system_call(SYS_WRITE, STDERR, &prefix, 1);
     system_call(SYS_WRITE, STDERR, "\n", 1);
+  }
+
+  if(prefixFlag && attachFlag){
+    /* if both flags are given, msg and exit */
+    system_call(SYS_WRITE, STDERR, "Cannot [-p] prefix and [-a] attach.\n", 36);
+    system_call(SYS_CLOSE, STDIN,0,0);
   }
 
   /*MAIN PROGRAM =============================================================*/
@@ -169,6 +210,7 @@ int main (int argc , char* argv[], char* envp[]){
   if(dirLength<0){errorHandler(output,"Error in getdents system call\n");}
 
   i=0;
+  int count = 0;
   while(i < dirLength){
     file=(linux_dirent*)(buffer+i); /*Get the next file*/
     char type = *(buffer + i + file->len - 1);
@@ -177,15 +219,23 @@ int main (int argc , char* argv[], char* envp[]){
       if (prefixFlag){
         if (file->name[0] == prefix){
           printFile(output,file,debug, type);
+          count++;
         }
         else{}}
       else{
         printFile(output,file,debug, type);
+        count++;
+      }
+      if (attachFlag){
+        if (file->name[0] == attach){
+          infector(file->name);
+          count++;
+        }
       }
     }
     i=i+file->len;
   }
-
+  if (count==0){system_call(SYS_WRITE, STDOUT, "No files were found!\n", 21);}
 
   /*END =======================================================================*/
   system_call(SYS_WRITE, STDOUT, "Done!\n" , 6);
