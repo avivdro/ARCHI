@@ -24,7 +24,6 @@ virus* readVirus(FILE* fp, int big_endian){
 	if (fread(&(v->SigSize), 2, 1, fp) != 1){
 		return NULL;
 	}
-	
 	if (big_endian){
 		int swapped = (v->SigSize>>8) | (v->SigSize<<8);
 		v->SigSize = swapped;
@@ -60,15 +59,15 @@ void list_print(link *virus_list, FILE* stream){
         curr_link=curr_link->nextVirus;
     }
 }
-
-link* list_append(link* virus_list, virus* data){
+link* list_append(link* virus_list, virus* data)
+{
     link *new_link = (link *)malloc(sizeof(link));
     new_link->nextVirus = virus_list;
     new_link->vir = data;
     return new_link;
 }
-
-void list_free(link *virus_list){
+void list_free(link *virus_list)
+{
     virus *v;
     link *temp;
     while (virus_list != NULL) 
@@ -81,7 +80,6 @@ void list_free(link *virus_list){
         virus_list = temp;
     }
 }
-
 link* loadVirusListFromFile(link *virus_list){
 	char* filename=NULL;
     FILE* file;
@@ -111,29 +109,42 @@ link* loadVirusListFromFile(link *virus_list){
 }
 
 //Task1c====================================
-
-void detect_virus2(char *buffer, unsigned int size, link *virus_list, FILE* output){
-	int count = 0;
-	int attempts = 0;
-	link* local_list= virus_list;
-	
-	while (local_list != NULL){
-		virus* v = local_list->vir;
-		for (int offset = 0; offset + v->SigSize<size; offset++){
-			attempts++;
-			if (memcmp(buffer+offset, v->sig, v->SigSize)==0){
-				count++;
-                printf("Starting byte: %d\n",offset);
-                printf("Virus name: %s\n", v->virusName);
-                printf("Virus size: %d\n\n", v->SigSize);
-			}
-		}
-		local_list = local_list->nextVirus;
-	}
-	if (count==0){printf("No viruses found.\n");}
-	printf("Attempts at detecting: %d\n", attempts);
+link* virusNumberI(link* node, int index){
+    if(index==0)
+        return node;
+    return virusNumberI(node->nextVirus,index-1);
 }
 
+int get_list_size(link* node){
+    if(node==NULL)
+        return 0;
+    return get_list_size(node->nextVirus)+1;
+}
+int compare_virus(char* buffer, unsigned short rest_of_buffer, virus* virus){
+    int result=-1;
+    if(rest_of_buffer>=virus->SigSize){
+        result = memcmp(buffer,virus->sig,virus->SigSize);
+    }
+    return result;
+}
+
+
+void detect_virus(char *buffer, unsigned int size, link *virus_list, FILE* output){
+	int count = 0;
+	for(int offset=0;offset<size;offset++){
+        for(int i=0;i<get_list_size(virus_list);i++){
+            virus* virus = NULL;
+            virus = virusNumberI(virus_list,i)->vir;
+            if(compare_virus(buffer+offset,size-offset,virus)==0){
+            	count++;
+                printf("Starting byte: %d\n",offset);
+                printf("Virus name: %s\n", virus->virusName);
+                printf("Virus size: %d\n\n", virus->SigSize);
+            }
+        }
+    }
+    if (count==0){printf("No viruses were found.\n");}
+}
 
 unsigned int readVirusFile(char* filename, char* buffer){
 	FILE* file;
@@ -180,7 +191,7 @@ int main(int argc, char** argv){
 	list = NULL;
 	while (1){
 		if (input=='1'){ //Load signatures
-			//list = NULL;
+			list = NULL;
 			//fgetc(stdin);
 			list = loadVirusListFromFile(list);
 		}
@@ -198,9 +209,8 @@ int main(int argc, char** argv){
 				printf("Invalid file given.\n");
 			}
 			else{
-			    detect_virus2(buffer, fileLength, list, stdout);
+			    detect_virus(buffer, fileLength, list, stdout);
 			}
-			free(buffer);
 		}
 		if (input == '4'){ //Fix the viruses
 			handle_kill(argv[1]);
