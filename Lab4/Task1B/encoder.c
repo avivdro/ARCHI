@@ -70,7 +70,7 @@ int main (int argc , char* argv[], char* envp[]){
     if(strncmp("-o",argv[i],2*sizeof(char)) == 0){
       valid_argument = 1;
       int fileDescOutputFile;
-      fileDescOutputFile = system_call(SYS_OPEN, argv[i]+2*sizeof(char),O_WRONLY | O_CREATE,0777);
+      fileDescOutputFile = system_call(SYS_OPEN, argv[i]+2*sizeof(char),O_WRONLY | O_CREATE, 0777);
       if(fileDescOutputFile < 0) { errorHandler(STDOUT,"Cannot open output file.\n");}
       else{output=fileDescOutputFile;}
       if (debug){
